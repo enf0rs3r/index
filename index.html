@@ -1,44 +1,94 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Clicker</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            text-align: center;
+            padding: 50px;
+        }
+
+        h1 {
+            font-size: 2em;
+            color: #333;
+        }
+
+        #click-count {
+            font-size: 2em;
+            color: #4caf50;
+        }
+
+        img {
+            width: 200px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        img:hover {
+            transform: scale(1.1);
+        }
+    </style>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script>
         let userId;
 
         document.addEventListener("DOMContentLoaded", async () => {
-    const tg = window.Telegram.WebApp;
-    tg.expand();
+            const tg = window.Telegram.WebApp;
+            tg.expand();
 
-    // Убедись, что userId получен корректно
-    userId = tg.initDataUnsafe?.user?.id;
+            // Убедись, что userId получен корректно
+            userId = tg.initDataUnsafe?.user?.id;
 
-    if (!userId) {
-        alert("Ошибка: не удалось получить user_id.");
-        return;
-    }
+            if (!userId) {
+                alert("Ошибка: не удалось получить user_id.");
+                return;
+            }
 
-    updateClicks();
-});
-
+            // Обновить клики
+            updateClicks();
+        });
 
         async function updateClicks() {
-            let response = await fetch(`/get_clicks/${userId}`);
-            let data = await response.json();
-            document.getElementById("click-count").innerText = data.clicks;
+            try {
+                let response = await fetch(`/get_clicks/${userId}`);
+                if (!response.ok) {
+                    throw new Error("Ошибка получения данных кликов");
+                }
+                let data = await response.json();
+                document.getElementById("click-count").innerText = data.clicks;
+            } catch (error) {
+                alert("Произошла ошибка при обновлении кликов: " + error.message);
+            }
         }
 
-        async function clickButton() {
-            let response = await fetch(`/click/${userId}`);
-            let data = await response.json();
-            document.getElementById("click-count").innerText = data.clicks;
+        async function clickImage() {
+            try {
+                const image = document.querySelector("img");
+                image.disabled = true; // Отключить картинку
+
+                let response = await fetch(`/click/${userId}`, {
+                    method: 'POST'
+                });
+                if (!response.ok) {
+                    throw new Error("Ошибка клика");
+                }
+                let data = await response.json();
+                document.getElementById("click-count").innerText = data.clicks;
+            } catch (error) {
+                alert("Произошла ошибка: " + error.message);
+            } finally {
+                document.querySelector("img").disabled = false; // Включить картинку обратно
+            }
         }
     </script>
 </head>
 <body>
     <h1>Кликов: <span id="click-count">0</span></h1>
-    <button onclick="clickButton()">Клик!</button>
+    <!-- Картинка, на которую нужно кликать -->
+    <img src="https://via.placeholder.com/200" alt="Click me" onclick="clickImage()" />
 </body>
 </html>
